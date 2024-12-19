@@ -57,6 +57,8 @@ import LinkIcon from '@/public/images/messages/link.svg'
 import { Blockaid } from '@/components/tx/security/blockaid'
 import CheckWallet from '@/components/common/CheckWallet'
 import NetworkWarning from '@/components/new-safe/create/NetworkWarning'
+import { getDomainHash, getSafeMessageMessageHash } from '@/utils/safe-hashes'
+import type { SafeVersion } from '@safe-global/safe-core-sdk-types'
 
 const createSkeletonMessage = (confirmationsRequired: number): SafeMessage => {
   return {
@@ -242,19 +244,12 @@ const SuccessCard = ({ safeMessage, onContinue }: { safeMessage: SafeMessage; on
 
 type BaseProps = Pick<SafeMessage, 'logoUri' | 'name' | 'message'>
 
-// Custom Safe Apps do not have a `safeAppId`
-export type ProposeProps = BaseProps & {
-  safeAppId?: number
-  requestId: RequestId
-}
-
-// A proposed message does not return the `safeAppId` but the `logoUri` and `name` of the Safe App that proposed it
-export type ConfirmProps = BaseProps & {
-  safeAppId?: never
+export type SignMessageProps = BaseProps & {
+  origin?: string
   requestId?: RequestId
 }
 
-const SignMessage = ({ message, safeAppId, requestId }: ProposeProps | ConfirmProps): ReactElement => {
+const SignMessage = ({ message, origin, requestId }: SignMessageProps): ReactElement => {
   // Hooks & variables
   const { setTxFlow } = useContext(TxModalContext)
   const { setSafeMessage: setContextSafeMessage } = useContext(SafeTxContext)
@@ -267,6 +262,12 @@ const SignMessage = ({ message, safeAppId, requestId }: ProposeProps | ConfirmPr
 
   const { decodedMessage, safeMessageMessage, safeMessageHash } = useDecodedSafeMessage(message, safe)
   const [safeMessage, setSafeMessage] = useSafeMessage(safeMessageHash)
+  const domainHash = getDomainHash({
+    chainId: safe.chainId,
+    safeAddress: safe.address.value,
+    safeVersion: safe.version as SafeVersion,
+  })
+  const messageHash = getSafeMessageMessageHash({ message: decodedMessage, safeVersion: safe.version as SafeVersion })
   const isPlainTextMessage = typeof decodedMessage === 'string'
   const decodedMessageAsString = isPlainTextMessage ? decodedMessage : JSON.stringify(decodedMessage, null, 2)
   const signedByCurrentSafe = !!safeMessage?.confirmations.some(({ owner }) => owner.value === wallet?.address)
@@ -283,7 +284,7 @@ const SignMessage = ({ message, safeAppId, requestId }: ProposeProps | ConfirmPr
     decodedMessage,
     safeMessageHash,
     requestId,
-    safeAppId,
+    origin,
     () => setTxFlow(undefined),
   )
 
@@ -353,6 +354,8 @@ const SignMessage = ({ message, safeAppId, requestId }: ProposeProps | ConfirmPr
             <AccordionDetails>
               <MessageHashField label="SafeMessage" hashValue={safeMessageMessage} />
               <MessageHashField label="SafeMessage hash" hashValue={safeMessageHash} />
+              <MessageHashField label="Domain hash" hashValue={domainHash} />
+              <MessageHashField label="Message hash" hashValue={messageHash} />
             </AccordionDetails>
           </Accordion>
 
