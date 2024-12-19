@@ -3,7 +3,7 @@ import useAsync from '@/hooks/useAsync'
 import { useCurrentChain } from '@/hooks/useChains'
 import { isMultisigDetailedExecutionInfo } from '@/utils/transaction-guards'
 import { Box, Divider } from '@mui/material'
-import { TransactionDetails } from '@safe-global/safe-gateway-typescript-sdk'
+import type { TransactionDetails } from '@safe-global/safe-gateway-typescript-sdk'
 
 const TxNote = ({ txDetails }: { txDetails: TransactionDetails }) => {
   const currentChain = useCurrentChain()
